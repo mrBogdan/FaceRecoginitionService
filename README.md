@@ -1,1 +1,1 @@
-# FaceRecoginitionService
+# FaceRecognitionService
