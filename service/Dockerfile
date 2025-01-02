@@ -1,14 +1,13 @@
-FROM node:22.12.0
+FROM node:22.11.0
 
-WORKDIR /usr/app
+WORKDIR /app
 
-COPY package*.json .
+COPY package*.json ./
 
-COPY src ./src
+RUN npm install
 
-USER node
+COPY . .
 
 EXPOSE 8080
 
-CMD ["node", "./src/index.js"]
-
+CMD ["npm", "start"]
