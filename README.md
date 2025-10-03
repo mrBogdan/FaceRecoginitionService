@@ -11,3 +11,7 @@ python -m venv venv
 ```shell
 pip freeze > requirements.txt
 ```
+
+```shell
+uvicorn main:app --reload
+```
