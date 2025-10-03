@@ -1,4 +1,6 @@
-# To adcitvate venv
+# To activate venv
+
+## Windows
 
 Temporary turn off security of running ps1 scripts
 ```
