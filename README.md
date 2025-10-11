@@ -4,16 +4,14 @@
 python -m venv venv
 ```
 
+Активувавти venv
 ```shell
-.\venv\Scripts\Activate.ps1
+poetry shell
 ```
 
+Встановити всі залежності
 ```shell
-pip install -r requirements.txt
-```
-
-```shell
-pip freeze > requirements.txt
+poetry install
 ```
 
 Встановлення dev залежностей:
