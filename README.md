@@ -16,6 +16,16 @@ pip install -r requirements.txt
 pip freeze > requirements.txt
 ```
 
+Встановлення dev залежностей:
+```shell
+poetry add some-dependency
+```
+
+Встановлення dev залежностей:
+```shell
+poetry add some-dependency --group dev
+```
+
 Pyserver:
 ```shell
 uvicorn main:app --reload
