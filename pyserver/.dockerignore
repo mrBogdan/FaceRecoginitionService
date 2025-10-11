@@ -1,0 +1,17 @@
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Poetry / Python venv
+.venv
+dist
+*.pyc
+__pycache__/
+
+# IDE
+.idea/
+.vscode/
