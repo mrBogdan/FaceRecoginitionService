@@ -29,5 +29,5 @@ jobs:
     - name: Deploy new version
       run: |
         cd /home/deployer/infra
-        docker-compose pull api
-        docker-compose up -d --no-deps api
+        docker compose pull api
+        docker compose up -d --no-deps api
