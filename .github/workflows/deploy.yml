@@ -22,7 +22,7 @@ jobs:
     - name: Build and push Docker image
       uses: docker/build-push-action@v4
       with:
-        context: .
+        context: ./pyserver
         push: true
         tags: registry.veriface.online/veriface.online:latest
 
