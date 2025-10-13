@@ -8,6 +8,7 @@ Dockerfile
 
 # Poetry / Python venv
 .venv
+venv
 dist
 *.pyc
 __pycache__/
