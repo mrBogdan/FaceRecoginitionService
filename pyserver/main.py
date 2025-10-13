@@ -1,36 +1,38 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Request
 from pydantic import BaseModel
-import httpx
-import asyncio
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
 
 app = FastAPI(title="Async FastAPI Server Example")
+templates = Jinja2Templates(directory="templates")
 
-class Item(BaseModel):
-    name: str
-    price: float
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
-@app.post("/items/")
-async def create_item(item: Item):
-    return {"message": f"Item '{item.name}' with price {item.price} created."}
+class User(BaseModel):
+    username: str
+    password: str
 
-@app.get("/ping")
-async def ping():
-    return {"message": "pong"}
+users = []
 
-@app.get("/fetch")
-async def fetch_example():
-    url = "https://jsonplaceholder.typicode.com/todos/1"
-    async with httpx.AsyncClient() as client:
-        r = await client.get(url)
-        if r.status_code != 200:
-            raise HTTPException(status_code=502, detail="Failed to fetch data")
-        return r.json()
+@app.get("/health", status_code=200)
+def health_check():
+    return {"status": "ok"}
 
-@app.get("/parallel")
-async def parallel_tasks():
-    async def task(n):
-        await asyncio.sleep(n)
-        return f"Task {n} done"
+@app.get("/login", response_class=HTMLResponse)
+async def login(request: Request, name: str = "World"):
+    return templates.TemplateResponse("login.html", {"request": request, "name": name})
 
-    results = await asyncio.gather(task(1), task(2), task(3))
-    return {"results": results}
+@app.post("/submit")
+async def submit(request: Request):
+    request_form = await request.form()
+    return f"Submitted! (name={request_form['name']}, email={request_form['email']}, password={request_form['password']})"
+
+@app.get("/users")
+async def get_users():
+    return users
+
+@app.get("/")
+async def root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+

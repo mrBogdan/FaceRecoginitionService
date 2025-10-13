@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+    <script src="/static/main.js"></script>
+</head>
+<body>
+ Hello, {{name}}
+
+<form method="post" action="/submit">
+    <fieldset>
+        <legend>Контактні дані</legend>
+        <input type="text" name="name" placeholder="Ім'я">
+        <input type="email" name="email" placeholder="Email">
+        <input type="password" name="password" placeholder="Пароль">
+        <input type="submit" value="Login"/>
+    </fieldset>
+
+</form>
+</body>
+</html>
