@@ -46,18 +46,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function sendFaceToServer(faceDataUrl) {
+    async function sendFaceToServer(faceBlob, type) {
         console.log("Sending face to server...");
         const formData = new FormData();
-        formData.append('image', faceDataUrl);
-        formData.append('type', 'biometric');
+        formData.append('image', faceBlob);
+        formData.append('type', type);
 
         try {
             const response = await fetch('/login', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
                 body: formData
             });
 
@@ -118,7 +115,21 @@ document.addEventListener('DOMContentLoaded', () => {
     snapshotImage.src = imageDataURL;
     snapshotImage.style.display = 'block';
 
-    await sendFaceToServer(imageDataURL);
+    canvas.toBlob(async (blob) => {
+                if (blob) {
+                    const imageDataURL = URL.createObjectURL(blob);
+                    snapshotImage.src = imageDataURL;
+                    snapshotImage.style.display = 'block';
+
+                    await sendFaceToServer(blob, 'biometric');
+
+                    URL.revokeObjectURL(imageDataURL);
+
+                } else {
+                    console.error("Failed to create blob from canvas.");
+                    alert("Failed to capture face for sending.");
+                }
+            }, 'image/png');
 }
 
     snapButton.disabled = true;
