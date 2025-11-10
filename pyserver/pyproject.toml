@@ -34,7 +34,7 @@ dependencies = [
     "uvicorn (==0.37.0)",
     "websockets (==15.0.1)",
     "gunicorn (>=23.0.0,<24.0.0)",
-    "opencv-python (>=4.9)"
+    "opencv-python-headless (>=4.9)"
 ]
 
 
