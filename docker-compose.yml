@@ -5,9 +5,9 @@ services:
     image: pgvector/pgvector:pg16
     container_name: postgres_with_vector
     environment:
-      - POSTGRES_DB=my_project_db
-      - POSTGRES_USER=my_user
-      - POSTGRES_PASSWORD=my_secret_password
+      - POSTGRES_DB=frodo
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=1U8f)-W33T-I
     ports:
       - "5432:5432"
     volumes:
