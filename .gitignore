@@ -3,5 +3,7 @@
 .DS_Store
 /build
 **/venv
-__pycache__
+datasets/
+venv-analysis/
+__pycache__/
 docker
