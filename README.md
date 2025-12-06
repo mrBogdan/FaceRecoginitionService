@@ -26,7 +26,7 @@ poetry add some-dependency --group dev
 
 Pyserver:
 ```shell
-uvicorn main:app --reload
+DATABASE_URL='postgresql://admin:1U8f)-W33T-I@localhost:5432/frodo' poetry run uvicorn main:app --reload
 ```
 
 ### Docker registry
