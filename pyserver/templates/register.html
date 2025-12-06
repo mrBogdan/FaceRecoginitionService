@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register</title>
+    <link rel="icon" href="/static/favicon.png" type="image/png">
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; background-color: #f4f4f4; }
+        video, img, #snapshotContainer { border: 2px solid #333; border-radius: 8px; background-color: #000; max-width: 100%; margin-top: 10px; }
+        button { font-size: 16px; padding: 10px 20px; margin: 15px; cursor: pointer; border: none; border-radius: 5px; background-color: #28a745; color: white; }
+        button:hover { background-color: #218838; }
+        canvas { display: none; }
+        form { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; padding: 20px; border: 1px solid #ccc; border-radius: 8px; background-color: #fff; }
+        input[type="email"], input[type="password"] { padding: 8px; border-radius: 4px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <h1>Реєстрація нового користувача</h1>
+
+    <video id="webcam" width="640" height="480" autoplay playsinline></video>
+    <button id="snapButton">Зробити фото для реєстрації</button>
+    <canvas id="canvas"></canvas>
+
+    <div id="snapshotContainer" style="display:none;">
+        <h2>Ваш знімок для реєстрації:</h2>
+        <img id="snapshot" alt="Ваш знімок з'явиться тут">
+    </div>
+
+    <form id="registerForm" style="display:none;">
+        <input type="email" id="email" name="email" placeholder="Введіть ваш Email" required>
+        <input type="password" id="password" name="password" placeholder="Введіть ваш Пароль" required>
+        <button type="submit">Зареєструватися</button>
+    </form>
+
+    <div id="message"></div>
+
+    <script>
+        const video = document.getElementById('webcam');
+        const canvas = document.getElementById('canvas');
+        const snapButton = document.getElementById('snapButton');
+        const snapshot = document.getElementById('snapshot');
+        const registerForm = document.getElementById('registerForm');
+        const snapshotContainer = document.getElementById('snapshotContainer');
+        const messageDiv = document.getElementById('message');
+        let imageBlob = null;
+
+        // Access webcam
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    video.srcObject = stream;
+                    video.play();
+                })
+                .catch(err => console.error("Error accessing webcam: ", err));
+        }
+
+        // Take snapshot
+        snapButton.addEventListener('click', () => {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            snapshot.src = canvas.toDataURL('image/jpeg');
+            snapshotContainer.style.display = 'block';
+            registerForm.style.display = 'flex'; // Show form after taking photo
+
+            canvas.toBlob(blob => {
+                imageBlob = blob;
+            }, 'image/jpeg');
+        });
+
+        // Handle form submission
+        registerForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            if (!imageBlob) {
+                messageDiv.textContent = 'Будь ласка, спочатку зробіть фото.';
+                messageDiv.style.color = 'red';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('email', document.getElementById('email').value);
+            formData.append('password', document.getElementById('password').value);
+            formData.append('face_image', imageBlob, 'face.jpg');
+
+            try {
+                const response = await fetch('/register', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    messageDiv.textContent = `Успішна реєстрація! ${result.message}`;
+                    messageDiv.style.color = 'green';
+                    registerForm.reset();
+                    snapshotContainer.style.display = 'none';
+                    registerForm.style.display = 'none';
+                } else {
+                    messageDiv.textContent = `Помилка: ${result.detail || 'Невідома помилка'}`;
+                    messageDiv.style.color = 'red';
+                }
+            } catch (error) {
+                messageDiv.textContent = `Сталася помилка мережі: ${error}`;
+                messageDiv.style.color = 'red';
+            }
+        });
+    </script>
+</body>
+</html>
