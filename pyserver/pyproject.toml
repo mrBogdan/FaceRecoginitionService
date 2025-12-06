@@ -5,7 +5,7 @@ description = ""
 authors = [
     {name = "Your Name",email = "you@example.com"}
 ]
-readme = "README.md"
+readme = "../README.md"
 requires-python = ">=3.11"
 dependencies = [
     "annotated-types (==0.7.0)",
@@ -34,10 +34,13 @@ dependencies = [
     "uvicorn (==0.37.0)",
     "websockets (==15.0.1)",
     "gunicorn (>=23.0.0,<24.0.0)",
-    "opencv-python-headless (>=4.9)"
+    "opencv-python-headless (>=4.9)",
+    "deepface",
+    "tf-keras"
 ]
 
-
+[tool.poetry]
+package-mode = false
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
