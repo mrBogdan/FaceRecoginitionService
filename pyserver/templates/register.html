@@ -12,6 +12,9 @@
         canvas { display: none; }
         form { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; padding: 20px; border: 1px solid #ccc; border-radius: 8px; background-color: #fff; }
         input[type="email"], input[type="password"] { padding: 8px; border-radius: 4px; border: 1px solid #ccc; }
+        #message { margin-top: 15px; padding: 10px; border-radius: 5px; display: none; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
     </style>
 </head>
 <body>
@@ -44,17 +47,17 @@
         const messageDiv = document.getElementById('message');
         let imageBlob = null;
 
-        // Access webcam
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
             navigator.mediaDevices.getUserMedia({ video: true })
                 .then(stream => {
                     video.srcObject = stream;
                     video.play();
                 })
-                .catch(err => console.error("Error accessing webcam: ", err));
+                .catch(err => {
+                    showMessage(`Помилка доступу до вебкамери: ${err}`, 'error');
+                });
         }
 
-        // Take snapshot
         snapButton.addEventListener('click', () => {
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
@@ -62,19 +65,17 @@
             context.drawImage(video, 0, 0, canvas.width, canvas.height);
             snapshot.src = canvas.toDataURL('image/jpeg');
             snapshotContainer.style.display = 'block';
-            registerForm.style.display = 'flex'; // Show form after taking photo
+            registerForm.style.display = 'flex';
 
             canvas.toBlob(blob => {
                 imageBlob = blob;
             }, 'image/jpeg');
         });
 
-        // Handle form submission
         registerForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             if (!imageBlob) {
-                messageDiv.textContent = 'Будь ласка, спочатку зробіть фото.';
-                messageDiv.style.color = 'red';
+                showMessage('Будь ласка, спочатку зробіть фото.', 'error');
                 return;
             }
 
@@ -92,20 +93,23 @@
                 const result = await response.json();
 
                 if (response.ok) {
-                    messageDiv.textContent = `Успішна реєстрація! ${result.message}`;
-                    messageDiv.style.color = 'green';
+                    showMessage(`Успішна реєстрація! ${result.message}`, 'success');
                     registerForm.reset();
                     snapshotContainer.style.display = 'none';
                     registerForm.style.display = 'none';
                 } else {
-                    messageDiv.textContent = `Помилка: ${result.detail || 'Невідома помилка'}`;
-                    messageDiv.style.color = 'red';
+                    showMessage(`Помилка: ${result.detail || 'Невідома помилка'}`, 'error');
                 }
             } catch (error) {
-                messageDiv.textContent = `Сталася помилка мережі: ${error}`;
-                messageDiv.style.color = 'red';
+                showMessage(`Сталася помилка мережі: ${error}`, 'error');
             }
         });
+
+        function showMessage(msg, type) {
+            messageDiv.textContent = msg;
+            messageDiv.className = type;
+            messageDiv.style.display = 'block';
+        }
     </script>
 </body>
 </html>
