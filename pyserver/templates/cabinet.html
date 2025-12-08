@@ -33,6 +33,9 @@
         .delete-btn:hover {
             background-color: #c82333;
         }
+        .logout-link {
+            margin-top: 20px;
+        }
         #message { margin-top: 15px; padding: 10px; border-radius: 5px; display: none; }
         .success { background-color: #d4edda; color: #155724; }
         .error { background-color: #f8d7da; color: #721c24; }
@@ -43,6 +46,9 @@
         <h1>Ласкаво просимо до вашого кабінету, <span id="userEmail">{{ email }}</span>!</h1>
         <p>Тут ви можете керувати своїм акаунтом.</p>
         <button id="deleteAccountBtn" class="delete-btn">Видалити мій акаунт</button>
+    </div>
+    <div class="logout-link">
+        <a href="/">Вийти</a>
     </div>
     <div id="message"></div>
 

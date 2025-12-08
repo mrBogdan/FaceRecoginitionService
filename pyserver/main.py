@@ -10,6 +10,8 @@ import asyncpg
 from deepface import DeepFace
 import json
 from pydantic import BaseModel
+import hashlib
+import secrets
 
 load_dotenv()
 
@@ -23,6 +25,19 @@ ARCFACE_THRESHOLD = 0.68
 
 class DeleteAccountRequest(BaseModel):
     email: str
+
+def hash_password(password: str, salt: str = None):
+    if salt is None:
+        salt = secrets.token_hex(16)
+    hashed_password = hashlib.sha256((password + salt).encode('utf-8')).hexdigest()
+    return f"{salt}:{hashed_password}"
+
+def verify_password(stored_password, provided_password):
+    try:
+        salt, hashed_password = stored_password.split(':')
+        return stored_password == hash_password(provided_password, salt)
+    except (ValueError, TypeError):
+        return False
 
 async def setup_db_connection(conn):
     await conn.set_type_codec(
@@ -80,6 +95,8 @@ async def register(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating face embedding: {e}")
 
+    password_hash = hash_password(password)
+
     async with DB_POOL.acquire() as connection:
         existing_user = await connection.fetchrow("SELECT email FROM users WHERE email = $1", email)
         if existing_user:
@@ -88,7 +105,7 @@ async def register(
         await connection.execute(
             "INSERT INTO users (email, password_hash, face_embedding) VALUES ($1, $2, $3)",
             email,
-            password,
+            password_hash,
             embedding
         )
 
@@ -100,46 +117,66 @@ async def login_page(request: Request):
 
 @app.post("/login")
 async def login(
-    image: UploadFile = File(...),
-    type: str = Form(...)
+    type: str = Form(...),
+    email: str = Form(None),
+    password: str = Form(None),
+    image: UploadFile = File(None)
 ):
-    if type != "biometric":
-        return JSONResponse(content={"status": "login", "message": "Unknown login type"})
+    if type == "biometric":
+        if not image:
+            raise HTTPException(status_code=400, detail="Biometric login requires an image.")
+        try:
+            image_data = await image.read()
+            np_arr = np.frombuffer(image_data, np.uint8)
+            img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+            if img is None:
+                raise HTTPException(status_code=400, detail="Could not decode image from file data.")
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Could not read image file: {e}")
 
-    try:
-        image_data = await image.read()
-        np_arr = np.frombuffer(image_data, np.uint8)
-        img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-        if img is None:
-            raise HTTPException(status_code=400, detail="Could not decode image from file data.")
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Could not read image file: {e}")
+        try:
+            embedding_obj = DeepFace.represent(img_path=img, model_name=MODEL_NAME, enforce_detection=True)
+            login_embedding = embedding_obj[0]['embedding']
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Could not find a face in the login image.")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error processing image: {e}")
 
-    try:
-        embedding_obj = DeepFace.represent(img_path=img, model_name=MODEL_NAME, enforce_detection=True)
-        login_embedding = embedding_obj[0]['embedding']
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Could not find a face in the login image.")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing image: {e}")
+        async with DB_POOL.acquire() as connection:
+            query = """
+                SELECT email, face_embedding <=> $1 AS distance
+                FROM users
+                ORDER BY distance
+                LIMIT 1;
+            """
+            closest_match = await connection.fetchrow(query, login_embedding)
 
-    async with DB_POOL.acquire() as connection:
-        query = """
-            SELECT email, face_embedding <=> $1 AS distance
-            FROM users
-            ORDER BY distance
-            LIMIT 1;
-        """
-        closest_match = await connection.fetchrow(query, login_embedding)
+            if closest_match:
+                best_match_email = closest_match['email']
+                min_distance = closest_match['distance']
 
-        if closest_match:
-            best_match_email = closest_match['email']
-            min_distance = closest_match['distance']
+                if min_distance <= ARCFACE_THRESHOLD:
+                    return JSONResponse(content={"status": "success", "redirect_url": f"/cabinet?email={best_match_email}"})
 
-            if min_distance <= ARCFACE_THRESHOLD:
-                return JSONResponse(content={"status": "success", "redirect_url": f"/cabinet?email={best_match_email}"})
+        return JSONResponse(content={"status": "failure", "message": "User not recognized."}, status_code=401)
 
-    return JSONResponse(content={"status": "failure", "message": "User not recognized."}, status_code=401)
+    elif type == "password":
+        if not email or not password:
+            raise HTTPException(status_code=400, detail="Password login requires email and password.")
+        
+        async with DB_POOL.acquire() as connection:
+            user = await connection.fetchrow("SELECT password_hash FROM users WHERE email = $1", email)
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found.")
+            
+            stored_password_hash = user['password_hash']
+            if verify_password(stored_password_hash, password):
+                return JSONResponse(content={"status": "success", "redirect_url": f"/cabinet?email={email}"})
+            else:
+                return JSONResponse(content={"status": "failure", "message": "Invalid credentials."}, status_code=401)
+
+    else:
+        return JSONResponse(content={"status": "login", "message": "Unknown login type"}, status_code=400)
 
 @app.get("/cabinet", response_class=HTMLResponse)
 async def cabinet(request: Request, email: str):
