@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Cabinet</title>
+    <link rel="icon" href="/static/favicon.png" type="image/png">
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            text-align: center;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #fff;
+        }
+        .delete-btn {
+            font-size: 16px;
+            padding: 10px 20px;
+            margin-top: 20px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #dc3545;
+            color: white;
+        }
+        .delete-btn:hover {
+            background-color: #c82333;
+        }
+        #message { margin-top: 15px; padding: 10px; border-radius: 5px; display: none; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Ласкаво просимо до вашого кабінету, <span id="userEmail">{{ email }}</span>!</h1>
+        <p>Тут ви можете керувати своїм акаунтом.</p>
+        <button id="deleteAccountBtn" class="delete-btn">Видалити мій акаунт</button>
+    </div>
+    <div id="message"></div>
+
+    <script>
+        const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+        const userEmail = document.getElementById('userEmail').textContent;
+        const messageDiv = document.getElementById('message');
+
+        deleteAccountBtn.addEventListener('click', async () => {
+            if (confirm('Ви впевнені, що хочете видалити свій акаунт? Цю дію неможливо буде скасувати.')) {
+                try {
+                    const response = await fetch('/delete_account', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ email: userEmail })
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        showMessage(result.message, 'success');
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 2000);
+                    } else {
+                        showMessage(`Помилка: ${result.detail || 'Не вдалося видалити акаунт'}`, 'error');
+                    }
+                } catch (error) {
+                    showMessage(`Сталася помилка мережі: ${error}`, 'error');
+                }
+            }
+        });
+
+        function showMessage(msg, type) {
+            messageDiv.textContent = msg;
+            messageDiv.className = type;
+            messageDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

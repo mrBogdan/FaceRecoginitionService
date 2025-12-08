@@ -1,14 +1,15 @@
 import os
 import numpy as np
 import cv2
-from fastapi import FastAPI, Request, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, Request, UploadFile, File, Form, HTTPException, Body
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from dotenv import load_dotenv
 import asyncpg
 from deepface import DeepFace
 import json
+from pydantic import BaseModel
 
 load_dotenv()
 
@@ -19,6 +20,9 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 DB_POOL = None
 MODEL_NAME = "ArcFace"
 ARCFACE_THRESHOLD = 0.68
+
+class DeleteAccountRequest(BaseModel):
+    email: str
 
 async def setup_db_connection(conn):
     await conn.set_type_codec(
@@ -91,8 +95,8 @@ async def register(
     return JSONResponse(content={"status": "success", "message": f"User {email} registered successfully."}, status_code=201)
 
 @app.get("/login", response_class=HTMLResponse)
-async def login_page(request: Request, name: str = "World"):
-    return templates.TemplateResponse("login.html", {"request": request, "name": name})
+async def login_page(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
 
 @app.post("/login")
 async def login(
@@ -133,9 +137,23 @@ async def login(
             min_distance = closest_match['distance']
 
             if min_distance <= ARCFACE_THRESHOLD:
-                return JSONResponse(content={"status": "success", "name": best_match_email, "distance": float(min_distance)})
+                return JSONResponse(content={"status": "success", "redirect_url": f"/cabinet?email={best_match_email}"})
 
     return JSONResponse(content={"status": "failure", "message": "User not recognized."}, status_code=401)
+
+@app.get("/cabinet", response_class=HTMLResponse)
+async def cabinet(request: Request, email: str):
+    return templates.TemplateResponse("cabinet.html", {"request": request, "email": email})
+
+@app.post("/delete_account")
+async def delete_account(data: DeleteAccountRequest):
+    email = data.email
+    async with DB_POOL.acquire() as connection:
+        result = await connection.execute("DELETE FROM users WHERE email = $1", email)
+        if result == "DELETE 1":
+            return JSONResponse(content={"status": "success", "message": "Акаунт успішно видалено."})
+        else:
+            raise HTTPException(status_code=404, detail="Користувача не знайдено.")
 
 @app.get("/users")
 async def get_users():

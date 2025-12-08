@@ -36,6 +36,8 @@
         canvas {
             display: none;
         }
+        #message { margin-top: 15px; padding: 10px; border-radius: 5px; display: none; }
+        .error { background-color: #f8d7da; color: #721c24; }
     </style>
 </head>
 <body>
@@ -45,6 +47,7 @@
     <video id="webcam" width="640" height="480" autoplay playsinline></video>
 
     <button id="snapButton">Зробити фото</button>
+    <div id="message"></div>
 
     <canvas id="canvas"></canvas>
 
