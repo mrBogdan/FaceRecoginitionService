@@ -31,6 +31,7 @@ jobs:
         DATABASE_URL: ${{ secrets.DATABASE_URL }}
       run: |
         cd /home/deployer/infra
+        docker compose -f docker-compose.prod.yml down api
         docker compose -f docker-compose.prod.yml pull api
-        DATABASE_URL=${DATABASE_URL} docker compose -f docker-compose.prod.yml up -d --no-deps api
+        DATABASE_URL=${DATABASE_URL} docker compose -f docker-compose.prod.yml up -d --force-recreate --no-deps api
         docker image prune -a -f
