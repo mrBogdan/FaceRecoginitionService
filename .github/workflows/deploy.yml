@@ -27,6 +27,8 @@ jobs:
         tags: registry.veriface.online/veriface.online:latest
 
     - name: Deploy new version
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
       run: |
         cd /home/deployer/infra
         docker compose -f docker-compose.prod.yml pull api
