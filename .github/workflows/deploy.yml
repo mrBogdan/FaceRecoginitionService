@@ -33,5 +33,5 @@ jobs:
       run: |
         cd /home/deployer/infra
         docker compose -f docker-compose.prod.yml pull api
-        docker compose -f docker-compose.prod.yml up -d --no-deps api
+        DEEPFACE_HOME=${DEEPFACE_HOME} DATABASE_URL=${DATABASE_URL} docker compose -f docker-compose.prod.yml up -d --no-deps api
         docker image prune -a -f
