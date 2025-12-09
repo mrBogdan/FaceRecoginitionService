@@ -40,4 +40,3 @@ Add user for docker registry:
 ```shell
 sudo htpasswd -B /etc/nginx/docker-registry.htpasswd another_user
 ```
-
