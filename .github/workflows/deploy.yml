@@ -29,9 +29,8 @@ jobs:
     - name: Deploy new version
       env:
         DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        DEEPFACE_HOME: /app
       run: |
         cd /home/deployer/infra
         docker compose -f docker-compose.prod.yml pull api
-        DEEPFACE_HOME=${DEEPFACE_HOME} DATABASE_URL=${DATABASE_URL} docker compose -f docker-compose.prod.yml up -d --no-deps api
+        DATABASE_URL=${DATABASE_URL} docker compose -f docker-compose.prod.yml up -d --no-deps api
         docker image prune -a -f

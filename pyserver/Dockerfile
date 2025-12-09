@@ -23,6 +23,7 @@ COPY static ./static/
 COPY templates ./templates/
 
 ENV PATH="/app/.venv/bin:$PATH"
+ENV DEEPFACE_HOME="/app"
 
 RUN chown -R app:app /app
 
