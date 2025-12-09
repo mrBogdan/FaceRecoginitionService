@@ -8,8 +8,7 @@ RUN pip install poetry
 COPY poetry.lock pyproject.toml ./
 
 RUN poetry config virtualenvs.in-project true
-
-RUN poetry install --no-root --only main
+RUN poetry install --no-root --only main && poetry cache clear . --all -n
 
 FROM python:3.11-slim
 
@@ -19,9 +18,11 @@ RUN addgroup --system app && adduser --system --group app
 
 COPY --from=builder /app/.venv /app/.venv
 
-ENV PATH="/app/.venv/bin:$PATH"
+COPY main.py ./
+COPY static ./static/
+COPY templates ./templates/
 
-COPY . .
+ENV PATH="/app/.venv/bin:$PATH"
 
 RUN chown -R app:app /app
 
