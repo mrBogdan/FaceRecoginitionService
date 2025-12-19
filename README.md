@@ -72,3 +72,4 @@ graph TD
     PG -- "Result (User Found/Not Found)" --> API
     API -- "JSON Response (Token)" --> UI
 ```
+
