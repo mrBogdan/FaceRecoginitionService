@@ -1,71 +1,218 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <title>User Cabinet</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Особистий кабінет</title>
     <link rel="icon" href="/static/favicon.png" type="image/png">
+    <link rel="stylesheet" href="/static/style.css">
     <style>
-        body {
-            font-family: sans-serif;
+        .users-table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+            text-align: left;
+        }
+        .users-table th, .users-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #ddd;
+            vertical-align: middle;
+        }
+        .users-table th {
+            background-color: #f8f9fa;
+            font-weight: 500;
+        }
+        .users-table tr:hover {
+            background-color: #f1f1f1;
+        }
+        .user-actions {
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 40px;
-            background-color: #f4f4f4;
+            gap: 8px;
         }
-        .container {
-            text-align: center;
-            padding: 20px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            background-color: #fff;
+        .table-responsive {
+            overflow-x: auto;
         }
-        .delete-btn {
-            font-size: 16px;
-            padding: 10px 20px;
-            margin-top: 20px;
-            cursor: pointer;
-            border: none;
-            border-radius: 5px;
-            background-color: #dc3545;
-            color: white;
-        }
-        .delete-btn:hover {
-            background-color: #c82333;
-        }
-        .logout-link {
-            margin-top: 20px;
-        }
-        #message { margin-top: 15px; padding: 10px; border-radius: 5px; display: none; }
-        .success { background-color: #d4edda; color: #155724; }
-        .error { background-color: #f8d7da; color: #721c24; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Ласкаво просимо до вашого кабінету, <span id="userEmail">{{ email }}</span>!</h1>
-        <p>Тут ви можете керувати своїм акаунтом.</p>
-        <button id="deleteAccountBtn" class="delete-btn">Видалити мій акаунт</button>
+    <div class="main-container" style="max-width: 800px;">
+        <h1>Вітаємо, <span id="userEmail">...</span>!</h1>
+        <p>Тут ви можете керувати налаштуваннями свого акаунта.</p>
+        <div id="message" class="message"></div>
+
+        <div id="admin-panel" style="display: none;">
+            <h2>Панель адміністратора</h2>
+            <div class="table-responsive">
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Email</th>
+                            <th>Роль</th>
+                            <th>Дії</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button id="deleteAccountBtn" class="btn btn-danger">Видалити мій акаунт</button>
+            <a href="#" id="logoutBtn" class="btn btn-outline-secondary">Вийти</a>
+        </div>
     </div>
-    <div class="logout-link">
-        <a href="/">Вийти</a>
-    </div>
-    <div id="message"></div>
 
     <script>
+        const userEmailSpan = document.getElementById('userEmail');
+        const adminPanel = document.getElementById('admin-panel');
+        const usersTableBody = document.getElementById('usersTableBody');
         const deleteAccountBtn = document.getElementById('deleteAccountBtn');
-        const userEmail = document.getElementById('userEmail').textContent;
+        const logoutBtn = document.getElementById('logoutBtn');
         const messageDiv = document.getElementById('message');
+        const token = localStorage.getItem('accessToken');
+        let currentUser = null;
+
+        function showMessage(msg, type) {
+            messageDiv.textContent = msg;
+            messageDiv.className = `message ${type}`;
+        }
+
+        if (!token) {
+            window.location.href = '/login';
+        }
+
+        async function fetchAndRenderUsers() {
+            try {
+                const response = await fetch('/users', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) throw new Error('Не вдалося завантажити список користувачів.');
+
+                const users = await response.json();
+                usersTableBody.innerHTML = '';
+                users.forEach(user => {
+                    const tr = document.createElement('tr');
+                    const isSelf = currentUser && user.id === currentUser.id;
+
+                    tr.innerHTML = `
+                        <td>${user.id}</td>
+                        <td>${user.email}</td>
+                        <td>${user.role}</td>
+                        <td class="user-actions"></td>
+                    `;
+
+                    const actionsCell = tr.querySelector('.user-actions');
+
+                    if (user.role === 'user') {
+                        const makeAdminBtn = document.createElement('button');
+                        makeAdminBtn.textContent = 'Зробити адміном';
+                        makeAdminBtn.className = 'btn btn-sm btn-success';
+                        makeAdminBtn.onclick = () => updateUserRole(user.id, 'admin');
+                        actionsCell.appendChild(makeAdminBtn);
+                    } else {
+                        const makeUserBtn = document.createElement('button');
+                        makeUserBtn.textContent = 'Зробити користувачем';
+                        makeUserBtn.className = 'btn btn-sm btn-secondary';
+                        makeUserBtn.disabled = isSelf;
+                        if (!isSelf) {
+                           makeUserBtn.onclick = () => updateUserRole(user.id, 'user');
+                        }
+                        actionsCell.appendChild(makeUserBtn);
+                    }
+
+                    const deleteUserBtn = document.createElement('button');
+                    deleteUserBtn.textContent = 'Видалити';
+                    deleteUserBtn.className = 'btn btn-sm btn-danger';
+                    deleteUserBtn.disabled = isSelf;
+                    if (!isSelf) {
+                        deleteUserBtn.onclick = () => deleteUser(user.id);
+                    }
+                    actionsCell.appendChild(deleteUserBtn);
+
+                    usersTableBody.appendChild(tr);
+                });
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        }
+
+        async function fetchUserData() {
+            try {
+                const response = await fetch('/users/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.status === 401) {
+                    localStorage.removeItem('accessToken');
+                    window.location.href = '/login';
+                    return;
+                }
+                if (!response.ok) throw new Error('Не вдалося завантажити дані користувача.');
+
+                currentUser = await response.json();
+                userEmailSpan.textContent = currentUser.email;
+
+                if (currentUser.role === 'admin') {
+                    adminPanel.style.display = 'block';
+                    fetchAndRenderUsers();
+                }
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        }
+
+        async function updateUserRole(userId, newRole) {
+            if (!confirm(`Ви впевнені, що хочете змінити роль для користувача ID ${userId} на '${newRole}'?`)) return;
+            try {
+                const response = await fetch(`/users/${userId}/role`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ role: newRole })
+                });
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Не вдалося оновити роль.');
+                }
+                showMessage('Роль користувача успішно оновлено.', 'success');
+                fetchAndRenderUsers();
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        }
+
+        async function deleteUser(userId) {
+            if (!confirm(`Ви впевнені, що хочете видалити користувача ID ${userId}?`)) return;
+            try {
+                const response = await fetch(`/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Не вдалося видалити користувача.');
+                }
+                showMessage('Користувача успішно видалено.', 'success');
+                fetchAndRenderUsers();
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        }
+
+        fetchUserData();
 
         deleteAccountBtn.addEventListener('click', async () => {
-            if (confirm('Ви впевнені, що хочете видалити свій акаунт? Цю дію неможливо буде скасувати.')) {
+            if (confirm('Ви впевнені, що хочете видалити свій акаунт? Цю дію неможливо скасувати.')) {
                 try {
                     const response = await fetch('/delete_account', {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ email: userEmail })
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        }
                     });
 
                     const result = await response.json();
@@ -73,22 +220,22 @@
                     if (response.ok) {
                         showMessage(result.message, 'success');
                         setTimeout(() => {
+                            localStorage.removeItem('accessToken');
                             window.location.href = '/';
                         }, 2000);
                     } else {
                         showMessage(`Помилка: ${result.detail || 'Не вдалося видалити акаунт'}`, 'error');
                     }
                 } catch (error) {
-                    showMessage(`Сталася помилка мережі: ${error}`, 'error');
+                    showMessage(`Сталася помилка мережі.`, 'error');
                 }
             }
         });
 
-        function showMessage(msg, type) {
-            messageDiv.textContent = msg;
-            messageDiv.className = type;
-            messageDiv.style.display = 'block';
-        }
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('accessToken');
+            window.location.href = '/';
+        });
     </script>
 </body>
 </html>

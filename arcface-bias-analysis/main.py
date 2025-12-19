@@ -22,7 +22,6 @@ class BiasAnalyzer:
         self.embeddings = {}
 
     def load_data(self, limit=None):
-        """Завантажує дані з CSV файлу і готує шляхи до зображень."""
         print(f"--- Завантаження даних з {self.label_file_path} ---")
 
         if not os.path.exists(self.label_file_path):
@@ -49,7 +48,6 @@ class BiasAnalyzer:
         return True
 
     def get_embeddings(self):
-        """Проганяє фото через ArcFace для отримання векторів."""
         print(f"--- Генерація векторів (Model: {MODEL_NAME}) ---")
         valid_data = []
 
@@ -76,7 +74,6 @@ class BiasAnalyzer:
         print("Векторизація завершена.")
 
     def evaluate_bias(self, group_by='race'):
-        """Аналізує середню відстань всередині груп (рас, статі тощо)."""
         print(f"--- Аналіз упереджень за групою '{group_by}' ---")
         df = pd.DataFrame(self.metadata)
         results = []

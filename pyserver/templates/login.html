@@ -1,154 +1,185 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <title>Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вхід</title>
     <link rel="icon" href="/static/favicon.png" type="image/png">
-    <style>
-        body {
-            font-family: sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-            background-color: #f4f4f4;
-        }
-        .login-section {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-top: 20px;
-        }
-        video, img {
-            border: 2px solid #333;
-            border-radius: 8px;
-            background-color: #000;
-            max-width: 100%;
-        }
-        button, input[type="submit"] {
-            font-size: 16px;
-            padding: 10px 20px;
-            margin: 15px;
-            cursor: pointer;
-            border: none;
-            border-radius: 5px;
-            background-color: #007bff;
-            color: white;
-        }
-        button:hover, input[type="submit"]:hover {
-            background-color: #0056b3;
-        }
-        #login-choice button {
-            background-color: #6c757d;
-        }
-        canvas {
-            display: none;
-        }
-        #message { margin-top: 15px; padding: 10px; border-radius: 5px; display: none; }
-        .error { background-color: #f8d7da; color: #721c24; }
-        .success { background-color: #d4edda; color: #155724; }
-        form {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        input[type="email"], input[type="password"] {
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            width: 250px;
-        }
-        .navigation-link {
-            margin-top: 20px;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 
-<h1>Login</h1>
-<div id="message"></div>
+<div class="main-container">
+    <div id="loader-overlay" class="loader-overlay hidden">
+        <div class="loader"></div>
+        <p>Ідентифікація...</p>
+    </div>
 
-<div id="login-choice">
-    <button id="showBiometricBtn">Вхід за допомогою веб-камери</button>
-    <button id="showPasswordBtn">Вхід за паролем</button>
-</div>
+    <h1>Вхід у ваш акаунт</h1>
+    <div id="message" class="message"></div>
 
-<div id="biometric-section" class="login-section">
-    <video id="webcam" width="640" height="480" autoplay playsinline></video>
-    <button id="snapButton">Зробити фото</button>
-    <img id="snapshot" alt="Ваш знімок з'явиться тут" style="display:none; margin-top: 10px;">
-</div>
+    <div class="button-group">
+        <button id="showBiometricBtn" class="btn btn-secondary">Використати веб-камеру</button>
+        <button id="showPasswordBtn" class="btn btn-secondary">Використати пароль</button>
+    </div>
 
-<div id="password-section" class="login-section" style="display: none;">
-    <form id="passwordLoginForm">
-        <label for="email">Email:</label>
-        <input type="email" id="email" name="email" required>
-        <label for="password">Пароль:</label>
-        <input type="password" id="password" name="password" required>
-        <input type="submit" value="Login">
-    </form>
-</div>
+    <div id="biometric-section">
+        <div class="video-capture-container">
+            <video id="webcam" autoplay playsinline></video>
+            <div id="oval-overlay" class="oval-overlay"></div>
+        </div>
+        <button id="snapButton" class="btn btn-primary">Сканувати обличчя</button>
+    </div>
 
-<div class="navigation-link">
-    <p>Немає акаунту? <a href="/register">Зареєструватися</a></p>
+    <div id="password-section" style="display: none;">
+        <form id="passwordLoginForm">
+            <div class="form-group">
+                <label for="email">Електронна пошта:</label>
+                <input type="email" id="email" name="email" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Пароль:</label>
+                <input type="password" id="password" name="password" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Увійти</button>
+        </form>
+    </div>
+
+    <div class="navigation-link">
+        <p>Немає акаунту? <a href="/register">Зареєструватися</a></p>
+    </div>
 </div>
 
 <canvas id="canvas"></canvas>
 
-<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
-<script src="/static/main.js"></script>
 <script>
     const biometricSection = document.getElementById('biometric-section');
     const passwordSection = document.getElementById('password-section');
     const showBiometricBtn = document.getElementById('showBiometricBtn');
     const showPasswordBtn = document.getElementById('showPasswordBtn');
+    const messageDiv = document.getElementById('message');
+    const loaderOverlay = document.getElementById('loader-overlay');
+    const webcam = document.getElementById('webcam');
+    const ovalOverlay = document.getElementById('oval-overlay');
+    const canvas = document.getElementById('canvas');
+    const UI_DELAY = 1500;
+
+    function showMessage(msg, type) {
+        messageDiv.textContent = msg;
+        messageDiv.className = `message ${type}`;
+    }
+
+    function toggleLoader(show) {
+        loaderOverlay.classList.toggle('hidden', !show);
+    }
+
+    async function startWebcam() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            webcam.srcObject = stream;
+        } catch (err) {
+            showMessage('Не вдалося отримати доступ до веб-камери. Перевірте дозволи.', 'error');
+        }
+    }
+
+    function stopWebcam() {
+        if (webcam.srcObject) {
+            webcam.srcObject.getTracks().forEach(track => track.stop());
+        }
+    }
 
     showBiometricBtn.addEventListener('click', () => {
-        biometricSection.style.display = 'flex';
+        biometricSection.style.display = 'block';
         passwordSection.style.display = 'none';
+        startWebcam();
     });
 
     showPasswordBtn.addEventListener('click', () => {
         biometricSection.style.display = 'none';
-        passwordSection.style.display = 'flex';
+        passwordSection.style.display = 'block';
+        stopWebcam();
     });
 
-    // Initially show biometric login
-    biometricSection.style.display = 'flex';
+    biometricSection.style.display = 'block';
     passwordSection.style.display = 'none';
-
+    startWebcam();
 
     document.getElementById('passwordLoginForm').addEventListener('submit', async function(event) {
         event.preventDefault();
         const formData = new FormData(this);
         formData.append('type', 'password');
 
-        const messageDiv = document.getElementById('message');
-        messageDiv.style.display = 'none';
+        toggleLoader(true);
+        showMessage('', '');
 
-        try {
-            const response = await fetch('/login', {
-                method: 'POST',
-                body: formData
-            });
-            const result = await response.json();
-            if (response.ok && result.status === 'success') {
-                window.location.href = result.redirect_url;
-            } else {
-                messageDiv.textContent = result.message || 'Login failed';
-                messageDiv.className = 'error';
-                messageDiv.style.display = 'block';
+        setTimeout(async () => {
+            try {
+                const response = await fetch('/token', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    localStorage.setItem('accessToken', result.access_token);
+                    window.location.href = '/cabinet';
+                } else {
+                    showMessage(result.detail || 'Помилка входу. Перевірте дані.', 'error');
+                }
+            } catch (error) {
+                showMessage('Під час входу сталася непередбачена помилка.', 'error');
+            } finally {
+                toggleLoader(false);
             }
-        } catch (error) {
-            messageDiv.textContent = 'An error occurred during login.';
-            messageDiv.className = 'error';
-            messageDiv.style.display = 'block';
+        }, UI_DELAY);
+    });
+
+    async function handleBiometricLogin(blob) {
+        const formData = new FormData();
+        formData.append('type', 'biometric');
+        formData.append('image', blob, 'snapshot.jpg');
+
+        toggleLoader(true);
+        showMessage('', '');
+
+        setTimeout(async () => {
+            try {
+                const response = await fetch('/token', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    localStorage.setItem('accessToken', result.access_token);
+                    window.location.href = '/cabinet';
+                } else {
+                    showMessage(result.detail || 'Помилка біометричного входу.', 'error');
+                }
+            } catch (error) {
+                showMessage('Під час біометричного входу сталася помилка.', 'error');
+            } finally {
+                toggleLoader(false);
+            }
+        }, UI_DELAY);
+    }
+
+    document.getElementById('snapButton').addEventListener('click', async () => {
+        ovalOverlay.classList.add('flash');
+        setTimeout(() => ovalOverlay.classList.remove('flash'), 500);
+
+        const blob = await captureFrameAsBlob();
+        if (blob) {
+            handleBiometricLogin(blob);
         }
     });
+
+    function captureFrameAsBlob() {
+        canvas.width = webcam.videoWidth;
+        canvas.height = webcam.videoHeight;
+        const context = canvas.getContext('2d');
+        context.drawImage(webcam, 0, 0, canvas.width, canvas.height);
+
+        return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg'));
+    }
 </script>
 </body>
 </html>

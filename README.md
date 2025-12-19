@@ -40,3 +40,35 @@ Add user for docker registry:
 ```shell
 sudo htpasswd -B /etc/nginx/docker-registry.htpasswd another_user
 ```
+
+```mermaid
+graph TD
+    subgraph Client ["Клієнтська частина (Browser)"]
+        UI["HTML/JS Інтерфейс"]
+        Cam["Веб-камера"]
+        UI -- "Захоплення кадру" --> Cam
+        Cam -- "Відеопотік" --> UI
+    end
+
+    subgraph Server ["Монолітний сервер (Python)"]
+        API["API Controller"]
+        CV["OpenCV: Pre-processing"]
+        DF["DeepFace: Vectorization"]
+        Live["Liveness Detection"]
+        
+        API --> CV
+        CV --> Live
+        Live --> DF
+    end
+
+    subgraph Database ["База даних (PostgreSQL)"]
+        PG[("Users Table")]
+        Vec["pgvector Extension"]
+        PG --- Vec
+    end
+
+    UI -- "HTTP POST (Image Base64)" --> API
+    DF -- "SQL Query (Cosine Distance)" --> PG
+    PG -- "Result (User Found/Not Found)" --> API
+    API -- "JSON Response (Token)" --> UI
+```

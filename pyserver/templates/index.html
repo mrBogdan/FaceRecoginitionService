@@ -1,55 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <title>Welcome</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сервіс розпізнавання облич</title>
     <link rel="icon" href="/static/favicon.png" type="image/png">
-    <style>
-        body {
-            font-family: sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 40px;
-            background-color: #f4f4f4;
-        }
-        h1 {
-            color: #333;
-        }
-        .container {
-            text-align: center;
-        }
-        .button {
-            font-size: 18px;
-            padding: 12px 25px;
-            margin: 10px;
-            cursor: pointer;
-            border: none;
-            border-radius: 5px;
-            text-decoration: none;
-            color: white;
-        }
-        .login-btn {
-            background-color: #007bff;
-        }
-        .login-btn:hover {
-            background-color: #0056b3;
-        }
-        .register-btn {
-            background-color: #28a745;
-        }
-        .register-btn:hover {
-            background-color: #218838;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Ласкаво просимо до нашого сервісу!</h1>
-        <p>Ви можете увійти або зареєструватися, використовуючи свою веб-камеру.</p>
-        <div>
-            <a href="/login" class="button login-btn">Увійти</a>
-            <a href="/register" class="button register-btn">Зареєструватися</a>
+    <div class="main-container">
+        <h1>Ласкаво просимо до сервісу розпізнавання облич</h1>
+        <p>Цей сервіс дозволяє вам автентифікуватися за допомогою вашого обличчя або традиційного пароля. Безпечно, швидко та надійно.</p>
+        <div class="button-group">
+            <a href="/login" class="btn btn-primary">Увійти</a>
+            <a href="/register" class="btn btn-secondary">Зареєструватися</a>
         </div>
     </div>
 </body>
